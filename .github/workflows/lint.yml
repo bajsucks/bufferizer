@@ -1,0 +1,23 @@
+name: Lint
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Selene
+        run: |
+          wget https://github.com/Kampfkarren/selene/releases/download/0.31.0/selene-0.31.0-linux.zip
+          unzip selene-0.31.0-linux.zip
+          chmod +x selene
+          sudo mv selene /usr/local/bin/
+
+      - name: Run Selene
+        id: selene
+        run: selene src
