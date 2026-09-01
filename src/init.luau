@@ -6,6 +6,8 @@
 local bufferize = {}
 local schemas = require(script.schemas)
 local primitives = require(script.primitives)
+bufferize.primitives = primitives
+bufferize.schemas = schemas
 local info = primitives.info
 local reverse = primitives.reverse
 local RAW = primitives.RAW
