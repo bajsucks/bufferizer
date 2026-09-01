@@ -14,6 +14,8 @@ Install manually: Download the latest .rbxm release from Releases, or build from
 ```luau
 Bufferizer.Encode<T>(Payload: {T}, Schema: Schema<T>): buffer
 Bufferizer.Decode<T>(buffer, Schema: Schema<T>): {T}
+Bufferizer.schemas: {Schema<any>} -- out-of-the-box schemas
+Bufferizer.primitives.types: {any} -- primitive number types (u8, i16, f32, etc.)
 ```
 
 Out-of-the-box schemas:
