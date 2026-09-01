@@ -1,6 +1,6 @@
 --[[
 	Bufferizer
-	Homogenous array serialization
+	Homogeneous array serialization
 	By @bajsucks (Roblox: @baj_dev)
 ]]
 local bufferize = {}
