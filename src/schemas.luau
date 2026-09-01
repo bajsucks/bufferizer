@@ -5,9 +5,20 @@
 local primitives = require(script.Parent.primitives)
 local p = primitives.types
 
-export type Schema = { map: { number }, encode: (any) -> any, decode: (any) -> any }
+export type Schema<T> = {
+	map: { number },
+	encode: (value: T) -> ...any,
+	decode: (...any) -> T,
+}
 
-local schemas: { [string]: Schema } = {
+local schemas: { [string]: Schema<any> } = {
+	Vector2 = {
+		map = { p.f32, p.f32 },
+		encode = function(v: Vector2)
+			return v.X, v.Y
+		end,
+		decode = Vector2.new,
+	},
 	Vector3 = {
 		map = { p.f32, p.f32, p.f32 },
 		encode = function(v: Vector3)
@@ -15,10 +26,36 @@ local schemas: { [string]: Schema } = {
 		end,
 		decode = Vector3.new,
 	},
+	CFrame = {
+		map = { p.f32, p.f32, p.f32, p.f32, p.f32, p.f32, p.f32, p.f32, p.f32, p.f32, p.f32, p.f32 },
+		encode = function(cf: CFrame)
+			return cf:GetComponents()
+		end,
+		decode = CFrame.new,
+	},
+	Color3 = {
+		map = { p.f32, p.f32, p.f32 },
+		encode = function(c: Color3)
+			return c.R, c.G, c.B
+		end,
+		decode = Color3.new,
+	},
+	UDim = {
+		map = { p.f32, p.i32 },
+		encode = function(u: UDim)
+			return u.Scale, u.Offset
+		end,
+		decode = UDim.new,
+	},
+	UDim2 = {
+		map = { p.f32, p.i32, p.f32, p.i32 },
+		encode = function(u: UDim2)
+			return u.X.Scale, u.X.Offset, u.Y.Scale, u.Y.Offset
+		end,
+		decode = UDim2.new,
+	},
 	number = {
 		map = { p.f64 },
-		encode = p.RAW,
-		decode = p.RAW,
 	},
 	jecs_id = {
 		map = { p.u16, p.u8 },
