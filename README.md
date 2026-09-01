@@ -2,7 +2,7 @@
 
 Light, zero-dependency Luau SerDes library for homogeneous arrays.
 
-Install with Wally: Add "baj/bufferizer@^0.1.0" to your wally.toml and run `wally install`.
+Install with Wally: Add "bajsucks/bufferizer@^0.1.0" to your wally.toml and run `wally install`.
 
 Install manually: Download the latest .rbxm release from Releases, or build from source via `rojo build`
 
