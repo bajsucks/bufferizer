@@ -23,14 +23,18 @@ local function Size(Map)
 	end
 	return size
 end
-
+--[[
+	Encodes homogeneous payload into a buffer.
+]]
 function bufferize.Encode<T>(Payload: { T }, Schema: Schema<T>): buffer
 	Payload = Payload or {}
 	local s = Size(Schema)
 	local ts = s * #Payload
-	local buf = buffer.create(ts)
-	local offset = 0
 	local encode = Schema.encode or RAW
+
+	local offset = 0
+	local buf = buffer.create(ts)
+
 	for _, v: T in Payload do
 		for index, number in select(encode(v)) do
 			local EnumType = Schema.map[index]
@@ -42,16 +46,19 @@ function bufferize.Encode<T>(Payload: { T }, Schema: Schema<T>): buffer
 	end
 	return buf
 end
-
+--[[
+	Decodes a buffer with homogeneous payload.
+]]
 function bufferize.Decode<T>(buf: buffer, Schema: Schema<T>): { T }
 	local s = Size(Schema)
 	local count = buffer.len(buf) // s
-	local Payload = table.create(count)
-	local offset = 0
 	local decode = Schema.decode or RAW
 
-	for _ = 1, count do
-		local vals = {}
+	local offset = 0
+	local Payload = table.create(count)
+	local vals = table.create(#Schema.map)
+
+	for i = 1, count do
 		for index = 1, #Schema.map do
 			local EnumType = Schema.map[index]
 			local Type = reverse[EnumType]
@@ -59,7 +66,8 @@ function bufferize.Decode<T>(buf: buffer, Schema: Schema<T>): { T }
 			vals[index] = nInfo.Read(buf, offset)
 			offset += nInfo.Size
 		end
-		table.insert(Payload, decode(table.unpack(vals)))
+		Payload[i] = decode(table.unpack(vals))
+		table.clear(vals)
 	end
 
 	return Payload
