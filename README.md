@@ -12,11 +12,11 @@ Install manually: Download the latest .rbxm release from Releases, or build from
 
 ## Usage
 ```luau
-Bufferizer.Encode<T>(Payload: {T}, Schema): buffer
-Bufferizer.Decode<T>(buffer, Schema): {T}
+Bufferizer.Encode<T>(Payload: {T}, Schema: Schema<T>): buffer
+Bufferizer.Decode<T>(buffer, Schema: Schema<T>): {T}
 ```
 
-Out-of-the-box types:
+Out-of-the-box schemas:
 - `Vector2`
 - `Vector3`
 - `CFrame`
