@@ -10,7 +10,7 @@ local info = primitives.info
 local reverse = primitives.reverse
 local RAW = primitives.RAW
 
-type Schema = schemas.Schema
+type Schema<T> = schemas.Schema<T>
 
 -- Returns the size of the type in bytes
 local function Size(Map)
@@ -22,7 +22,7 @@ local function Size(Map)
 	return size
 end
 
-function bufferize.Encode<T>(Payload: { T }, Schema: Schema): buffer
+function bufferize.Encode<T>(Payload: { T }, Schema: Schema<T>): buffer
 	Payload = Payload or {}
 	local s = Size(Schema)
 	local ts = s * #Payload
@@ -41,7 +41,7 @@ function bufferize.Encode<T>(Payload: { T }, Schema: Schema): buffer
 	return buf
 end
 
-function bufferize.Decode<T>(buf: buffer, Schema: Schema): { T }
+function bufferize.Decode<T>(buf: buffer, Schema: Schema<T>): { T }
 	local s = Size(Schema)
 	local count = buffer.len(buf) // s
 	local Payload = table.create(count)
@@ -61,6 +61,10 @@ function bufferize.Decode<T>(buf: buffer, Schema: Schema): { T }
 	end
 
 	return Payload
+end
+
+function bufferize.Schema<T>(map: { number }, encode: (value: T) -> ...number, decode: (...number) -> T): Schema<T>
+	return { map = map, encode = encode, decode = decode }
 end
 
 return bufferize

@@ -32,23 +32,20 @@ If you want a custom type, you will have to create a schema.
 For example, Vector3 schema:
 ```luau
 -- p = Bufferizer.primitives.types
-{
-	map = { p.f32, p.f32, p.f32 },
-	encode = function(v: Vector3)
+Bufferizer.Schema(
+	{ p.f32, p.f32, p.f32 }, -- `map`, maps the primitives returned by `encode`
+	function(v: Vector3) -- `encode`, converts the type into primitives
 		return v.X, v.Y, v.Z
 	end,
-	decode = Vector3.new,
-}
+	Vector3.new -- `decode` converts the primitives back into the type
+)
 ```
-`map` maps the primitives returned by `encode`,
-`encode` converts the type into primitives,
-`decode` converts the primitives back into the type.
 It's as simple as that!
 
-You can also skip encode/decode for pure primitives.
-Example: 64-bit float schema:
+You can also skip encode/decode for pure primitives:
 ```luau
-{
-	map = { p.f64 }
-}
+-- p = Bufferizer.primitives.types
+Bufferizer.Schema( -- Luau number
+	{ p.f64 },
+)
 ```
