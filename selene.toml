@@ -1,6 +1,8 @@
 std = "roblox"
+exclude = ["src/Packages/*"]
 
 [lints]
 multiple_statements = "allow"
 shadowing = "warn"
 unused_variable = "warn"
+global_usage = "allow"

@@ -2,9 +2,17 @@
 
 Light, zero-dependency Luau SerDes library for homogeneous arrays.
 
-Install with Wally: Add `bufferizer = "bajsucks/bufferizer@^0.2.0"` to your wally.toml and run `wally install`.
+## Install
+### Forest
+`forest i bajsucks/bufferizer`
 
-Install manually: Download the latest .rbxm release from Releases, or build from source via `rojo build`
+### Wally
+Wally package is deprecated, but an older version is available:
+
+`bufferizer = "bajsucks/bufferizer@^0.2.0"`
+
+### .rbxm
+[Download the latest .rbxm release from Releases](https://github.com/bajsucks/bufferizer/releases/latest), or build from source via `rojo build`
 
 ## Use cases
 - Networking and replication (especially ECS)

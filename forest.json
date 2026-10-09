@@ -1,0 +1,10 @@
+{
+  "author": "bajsucks",
+  "dependencies": {},
+  "description": "A serdes library for homogeneous arrays",
+  "license": "MIT",
+  "name": "bufferizer",
+  "platform": "roblox",
+  "root": "src/init.luau",
+  "version": "0.2.1"
+}
