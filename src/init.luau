@@ -4,8 +4,8 @@
 	By @bajsucks (Roblox: @baj_dev)
 ]]
 local bufferize = {}
-local schemas = require(script.schemas)
-local primitives = require(script.primitives)
+local schemas = require("@self/schemas")
+local primitives = require("@self/primitives")
 bufferize.primitives = primitives
 bufferize.schemas = schemas
 local info = primitives.info

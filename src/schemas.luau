@@ -2,7 +2,7 @@
     encode - type -> schema
     decode - schema -> type
 ]]
-local primitives = require(script.Parent.primitives)
+local primitives = require("./primitives")
 local p = primitives.types
 
 export type Schema<T> = {
@@ -11,48 +11,74 @@ export type Schema<T> = {
 	decode: (...any) -> T,
 }
 
+-- datatypes resolve at call time so the module loads outside Roblox
 local schemas: { [string]: Schema<any> } = {
 	Vector2 = {
 		map = { p.f32, p.f32 },
 		encode = function(v: Vector2)
 			return v.X, v.Y
 		end,
-		decode = Vector2.new,
+		decode = function(x: number, y: number)
+			return Vector2.new(x, y)
+		end,
 	},
 	Vector3 = {
 		map = { p.f32, p.f32, p.f32 },
 		encode = function(v: Vector3)
 			return v.X, v.Y, v.Z
 		end,
-		decode = Vector3.new,
+		decode = function(x: number, y: number, z: number)
+			return Vector3.new(x, y, z)
+		end,
 	},
 	CFrame = {
 		map = { p.f32, p.f32, p.f32, p.f32, p.f32, p.f32, p.f32, p.f32, p.f32, p.f32, p.f32, p.f32 },
 		encode = function(cf: CFrame)
 			return cf:GetComponents()
 		end,
-		decode = CFrame.new,
+		decode = function(
+			x: number,
+			y: number,
+			z: number,
+			r00: number,
+			r01: number,
+			r02: number,
+			r10: number,
+			r11: number,
+			r12: number,
+			r20: number,
+			r21: number,
+			r22: number
+		)
+			return CFrame.new(x, y, z, r00, r01, r02, r10, r11, r12, r20, r21, r22)
+		end,
 	},
 	Color3 = {
 		map = { p.f32, p.f32, p.f32 },
 		encode = function(c: Color3)
 			return c.R, c.G, c.B
 		end,
-		decode = Color3.new,
+		decode = function(r: number, g: number, b: number)
+			return Color3.new(r, g, b)
+		end,
 	},
 	UDim = {
 		map = { p.f32, p.i32 },
 		encode = function(u: UDim)
 			return u.Scale, u.Offset
 		end,
-		decode = UDim.new,
+		decode = function(scale: number, offset: number)
+			return UDim.new(scale, offset)
+		end,
 	},
 	UDim2 = {
 		map = { p.f32, p.i32, p.f32, p.i32 },
 		encode = function(u: UDim2)
 			return u.X.Scale, u.X.Offset, u.Y.Scale, u.Y.Offset
 		end,
-		decode = UDim2.new,
+		decode = function(xs: number, xo: number, ys: number, yo: number)
+			return UDim2.new(xs, xo, ys, yo)
+		end,
 	},
 	number = {
 		map = { p.f64 },
