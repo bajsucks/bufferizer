@@ -23,6 +23,19 @@ local function Size(Map)
 	end
 	return size
 end
+local function writeRow(buf: buffer, offset: number, map: { number }, ...): number
+	local count = select("#", ...)
+	if count ~= #map then
+		error(`Schema expects {#map} values, got {count}`, 3)
+	end
+	for index = 1, #map do
+		local nInfo = info[reverse[map[index]]]
+		nInfo.Write(buf, offset, select(index, ...))
+		offset += nInfo.Size
+	end
+	return offset
+end
+
 --[[
 	Encodes homogeneous payload into a buffer.
 ]]
@@ -36,13 +49,7 @@ function bufferize.Encode<T>(Payload: { T }, Schema: Schema<T>): buffer
 	local buf = buffer.create(ts)
 
 	for _, v: T in Payload do
-		for index, number in select(encode(v)) do
-			local EnumType = Schema.map[index]
-			local Type = reverse[EnumType]
-			local nInfo = info[Type]
-			nInfo.Write(buf, offset, number)
-			offset += nInfo.Size
-		end
+		offset = writeRow(buf, offset, Schema.map, encode(v))
 	end
 	return buf
 end
