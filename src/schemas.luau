@@ -86,6 +86,7 @@ local schemas: { [string]: Schema<any> } = {
 	jecs_id = {
 		map = { p.u16, p.u8 },
 		encode = function(i24: number)
+			assert(i24 >= -0x800000 and i24 < 0x800000, `jecs_id expects an i24, got {i24}`)
 			local u24 = bit32.band(i24, 0xFFFFFF)
 			return bit32.band(u24, 0xFFFF), bit32.rshift(u24, 16)
 		end,

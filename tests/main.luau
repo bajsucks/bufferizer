@@ -302,6 +302,14 @@ do
 end
 
 do
+	local jecs = bufferize.schemas.jecs_id
+	local payload = { -8388608, -5, 0, 8388607 }
+	checkSame("jecs_id round-trip", bufferize.Decode(bufferize.Encode(payload, jecs), jecs), payload)
+	check("jecs_id rejects past i24", not pcall(bufferize.Encode, { 8388608 }, jecs))
+	check("jecs_id rejects below i24", not pcall(bufferize.Encode, { -8388609 }, jecs))
+end
+
+do
 	checkEqual("size per row", bufferize.Size(row), 13)
 	checkEqual("size per row with payload", bufferize.Size(row, { { 1, 1.5, 2.5 }, { 2, 3.5, 4.5 } }), 26)
 	checkEqual("size of variable schema", bufferize.Size(mixed), nil)
