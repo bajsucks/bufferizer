@@ -5,7 +5,7 @@ on:
   pull_request:
 
 jobs:
-  lint:
+  test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -16,5 +16,5 @@ jobs:
         uses: CompeyDev/setup-rokit@v0.2.1
 
       - name: Run Lune test
-        id: test
+        id: lune
         run: lune run tests/main.luau
