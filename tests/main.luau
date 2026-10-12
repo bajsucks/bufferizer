@@ -220,6 +220,55 @@ do
 	checkSame("variable fixed array round-trip", bufferize.Decode(bufferize.Encode(payload, words), words), payload)
 end
 
+local counters = bufferize.Schema({ bufferize.Anchored() }, function(value)
+	return value
+end, function(value)
+	return value
+end)
+
+do
+	local payload = { 10, 11, 12 }
+	local buf = bufferize.Encode(payload, counters)
+	checkEqual("anchored layout", buffer.tostring(buf), string.char(20, 2, 4))
+	checkEqual("anchored row size", bufferize.Size(counters), nil)
+	checkEqual("anchored payload size", bufferize.Size(counters, payload), buffer.len(buf))
+	checkSame("anchored round-trip", bufferize.Decode(buf, counters), payload)
+	checkSame(
+		"anchored wide round-trip",
+		bufferize.Decode(bufferize.Encode({ -2 ^ 31, 2 ^ 31, 0, -5 }, counters), counters),
+		{ -2 ^ 31, 2 ^ 31, 0, -5 }
+	)
+end
+
+local stamped = bufferize.Schema({ p.u8, bufferize.Anchored() }, function(v)
+	return v[1], v[2]
+end, function(tag, value)
+	return { tag, value }
+end)
+
+do
+	local payload = { { 1, 500 }, { 2, 499 }, { 3, 5000 } }
+	checkSame("anchored after fixed round-trip", bufferize.Decode(bufferize.Encode(payload, stamped), stamped), payload)
+end
+
+do
+	local payload = table.create(1000, 7)
+	local buf = bufferize.Encode(payload, counters)
+	checkEqual("anchored identical size", buffer.len(buf), 1000)
+	checkSame("anchored identical round-trip", bufferize.Decode(buf, counters), payload)
+end
+
+do
+	local first = bufferize.Encode({ 1000, 1001 }, counters)
+	local second = bufferize.Encode({ 5, 6 }, counters)
+	checkSame("anchored first call", bufferize.Decode(first, counters), { 1000, 1001 })
+	checkSame("anchored second call", bufferize.Decode(second, counters), { 5, 6 })
+end
+
+do
+	check("anchored rejects fractional", not pcall(bufferize.Encode, { 1.5 }, counters))
+end
+
 do
 	local encoded = bufferize.Encode({ { "hello", 1 } }, text)
 	local truncated = buffer.fromstring(buffer.readstring(encoded, 0, buffer.len(encoded) - 1))

@@ -10,6 +10,7 @@ bufferize.primitives = primitives
 bufferize.schemas = schemas
 bufferize.Array = primitives.Array
 bufferize.FixedArray = primitives.FixedArray
+bufferize.Anchored = primitives.Anchored
 local RAW = primitives.RAW
 local codecOf = primitives.codecOf
 

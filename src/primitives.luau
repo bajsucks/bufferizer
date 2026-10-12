@@ -269,6 +269,54 @@ local function FixedArray(element: number, count: number): Codec
 	}
 end
 
+--[[
+	An integer column storing the first row's value whole and every later row
+	as a zigzag varint delta from it.
+]]
+local function Anchored(): Codec
+	local anchored: Codec
+
+	-- anchors live in the table handed to each call, so the codec itself stays stateless
+	local function delta(value: number, anchors: Anchors?): number
+		assert(isIntegral(value), "Anchored requires integers")
+
+		local anchor = anchors and anchors[anchored]
+		if anchor == nil then
+			if anchors then
+				anchors[anchored] = value
+			end
+			return value
+		end
+		return value - anchor
+	end
+
+	anchored = {
+		Size = 1,
+		Variable = true,
+		Write = function(buf: buffer, offset: number, value: number, _: number?, anchors: Anchors?): number
+			return writeVarint(buf, offset, zigzag(delta(value, anchors)))
+		end,
+		Read = function(buf: buffer, offset: number, _: number?, anchors: Anchors?): (number, number)
+			local encoded, consumed = readVarint(buf, offset)
+			local value = unzigzag(encoded)
+			local anchor = anchors and anchors[anchored]
+			if anchor == nil then
+				if anchors then
+					anchors[anchored] = value
+				end
+			else
+				value += anchor
+			end
+			return value, consumed
+		end,
+		Measure = function(value: number, _: number?, anchors: Anchors?): number
+			return varintSize(zigzag(delta(value, anchors)))
+		end,
+	}
+
+	return anchored
+end
+
 return {
 	types = types,
 	reverse = reverse,
@@ -276,6 +324,7 @@ return {
 	codecOf = codecOf,
 	Array = Array,
 	FixedArray = FixedArray,
+	Anchored = Anchored,
 	isIntegral = isIntegral,
 	RAW = function<T>(n: T)
 		return n
