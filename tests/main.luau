@@ -81,6 +81,52 @@ do
 	check("arity mismatch raises", not pcall(bufferize.Encode, { 0 }, bad))
 end
 
+local function checkCodec(name: string, codecName: string, value: any, expected: any)
+	local codec = primitives.info[codecName]
+	local size = codec.Measure(value)
+	local buf = buffer.create(size)
+	local written = codec.Write(buf, 0, value)
+	local read, consumed = codec.Read(buf, 0)
+	check(`{name} width`, written == size and consumed == size and buffer.len(buf) == size)
+	checkEqual(`{name} value`, read, expected)
+end
+
+for _, value in { 0, 1, 127, 128, 16383, 16384, 2 ^ 31, 2 ^ 53 } do
+	checkCodec(`varint {value}`, "varint", value, value)
+end
+
+for _, value in { 0, 1, -1, 127, -128, 16383, 16384, 2 ^ 31, -2 ^ 31, 2 ^ 52, -2 ^ 52 } do
+	checkCodec(`zigzag {value}`, "zigzag", value, value)
+end
+
+do
+	local bytes = table.create(256)
+	for index = 1, 256 do
+		bytes[index] = index - 1
+	end
+	local allBytes = string.char(table.unpack(bytes))
+	checkCodec("string empty", "string", "", "")
+	checkCodec("string ascii", "string", "hello", "hello")
+	checkCodec("string all bytes", "string", allBytes, allBytes)
+	checkCodec("string 1 MiB", "string", string.rep("x", 1024 * 1024), string.rep("x", 1024 * 1024))
+end
+
+do
+	local buf = buffer.create(2)
+	primitives.info.varint.Write(buf, 0, 300)
+	checkEqual("varint encoding", buffer.tostring(buf), string.char(0xAC, 0x02))
+
+	local signed = buffer.create(1)
+	primitives.info.zigzag.Write(signed, 0, -1)
+	checkEqual("zigzag encoding", buffer.tostring(signed), string.char(1))
+end
+do
+	local buf = buffer.create(8)
+	check("varint rejects negative", not pcall(primitives.info.varint.Write, buf, 0, -1))
+	check("varint rejects fractional", not pcall(primitives.info.varint.Write, buf, 0, 1.5))
+	check("zigzag rejects fractional", not pcall(primitives.info.zigzag.Write, buf, 0, 1.5))
+end
+
 if failures > 0 then
 	print(`{failures} test(s) failed`)
 	process.exit(1)
