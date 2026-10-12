@@ -160,6 +160,66 @@ do
 	checkSame("empty variable round-trip", bufferize.Decode(buf, mixed), {})
 end
 
+local lists = bufferize.Schema({ bufferize.Array(p.u8), p.u8 }, function(v)
+	return v[1], v[2]
+end, function(items, tag)
+	return { items, tag }
+end)
+
+do
+	local payload = { { { 1, 2, 3 }, 9 }, { {}, 8 }, { { 4 }, 7 } }
+	local buf = bufferize.Encode(payload, lists)
+	checkEqual("array layout", buffer.tostring(buf), string.char(3, 1, 2, 3, 9, 0, 8, 1, 4, 7))
+	checkSame("array rows round-trip", bufferize.Decode(buf, lists), payload)
+	checkEqual("array size matches encode", bufferize.Size(lists, payload), buffer.len(buf))
+	check("array rejects a non-table", not pcall(bufferize.Encode, { { "abc", 1 } }, lists))
+	check("array rejects an unknown element", not pcall(bufferize.Array, 99))
+
+	local corrupted = bufferize.Encode({ { { 1, 2, 3 }, 9 } }, lists)
+	buffer.writeu8(corrupted, 0, 2)
+	local ok, decoded = pcall(bufferize.Decode, corrupted, lists)
+	check("corrupted array count is not silent", not ok or not same(decoded, { { { 1, 2, 3 }, 9 } }))
+end
+
+local series = bufferize.Schema({ bufferize.Array(p.zigzag) }, function(values)
+	return values
+end, function(values)
+	return values
+end)
+
+do
+	local payload = { { 0, -1, 2 ^ 40 }, {}, { -2 ^ 52, 1 } }
+	checkSame("varint array round-trip", bufferize.Decode(bufferize.Encode(payload, series), series), payload)
+end
+
+local triplets = bufferize.Schema({ bufferize.FixedArray(p.u16, 3), p.u8 }, function(v)
+	return v[1], v[2]
+end, function(items, tag)
+	return { items, tag }
+end)
+
+do
+	local payload = { { { 1, 2, 3 }, 9 }, { { 4, 5, 6 }, 8 } }
+	local buf = bufferize.Encode(payload, triplets)
+	checkEqual("fixed array row size", bufferize.Size(triplets), 7)
+	checkEqual("fixed array payload size", bufferize.Size(triplets, payload), 14)
+	checkSame("fixed array round-trip", bufferize.Decode(buf, triplets), payload)
+	check("fixed array count raises", not pcall(bufferize.Encode, { { { 1, 2 }, 9 } }, triplets))
+	check("fixed array fractional count raises", not pcall(bufferize.FixedArray, p.u8, 1.5))
+end
+
+local words = bufferize.Schema({ bufferize.FixedArray(p.string, 2), p.u8 }, function(v)
+	return v[1], v[2]
+end, function(items, tag)
+	return { items, tag }
+end)
+
+do
+	local payload = { { { "", "hi" }, 1 }, { { string.rep("x", 300), "y" }, 2 } }
+	checkEqual("variable fixed array size", bufferize.Size(words), nil)
+	checkSame("variable fixed array round-trip", bufferize.Decode(bufferize.Encode(payload, words), words), payload)
+end
+
 do
 	local encoded = bufferize.Encode({ { "hello", 1 } }, text)
 	local truncated = buffer.fromstring(buffer.readstring(encoded, 0, buffer.len(encoded) - 1))

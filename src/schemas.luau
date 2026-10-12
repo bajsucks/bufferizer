@@ -6,7 +6,7 @@ local primitives = require("./primitives")
 local p = primitives.types
 
 export type Schema<T> = {
-	map: { number },
+	map: { primitives.Column },
 	encode: (value: T) -> ...any,
 	decode: (...any) -> T,
 }

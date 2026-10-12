@@ -8,26 +8,21 @@ local schemas = require("@self/schemas")
 local primitives = require("@self/primitives")
 bufferize.primitives = primitives
 bufferize.schemas = schemas
-local info = primitives.info
-local reverse = primitives.reverse
+bufferize.Array = primitives.Array
+bufferize.FixedArray = primitives.FixedArray
 local RAW = primitives.RAW
+local codecOf = primitives.codecOf
 
 type Schema<T> = schemas.Schema<T>
 type Codec = primitives.Codec
+type Column = primitives.Column
 type Anchors = primitives.Anchors
-
-local function codecOf(column: number): Codec
-	local name = reverse[column]
-	local codec = name and info[name]
-	assert(codec, `Unknown primitive {column}`)
-	return codec
-end
 
 local function resolve(Schema: Schema<any>): { Codec }
 	assert(#Schema.map > 0, "Schema has no columns")
 	local codecs = table.create(#Schema.map)
 	for index, column in Schema.map do
-		codecs[index] = codecOf(column)
+		codecs[index] = if type(column) == "number" then codecOf(column) else column
 	end
 	return codecs
 end
@@ -188,7 +183,7 @@ function bufferize.Size<T>(Schema: Schema<T>, Payload: { T }?): number?
 	return measurePayload(codecs, Payload, Schema.encode or RAW)
 end
 
-function bufferize.Schema<T>(map: { number }, encode: (value: T) -> ...any, decode: (...any) -> T): Schema<T>
+function bufferize.Schema<T>(map: { Column }, encode: (value: T) -> ...any, decode: (...any) -> T): Schema<T>
 	return { map = map, encode = encode, decode = decode }
 end
 

@@ -36,6 +36,8 @@ export type Codec = {
 	Measure: ((value: any, row: number?, anchors: Anchors?) -> number)?,
 }
 
+export type Column = number | Codec
+
 --[[
 	Whether a number has no fractional part.
 ]]
@@ -141,10 +143,139 @@ local info: { [string]: Codec } = {
 	},
 }
 
+local function codecOf(column: number): Codec
+	local name = reverse[column]
+	local codec = name and info[name]
+	assert(codec, `Unknown primitive {column}`)
+	return codec
+end
+
+--[[
+	Checks that an array value is a table, and that it holds count elements when given.
+]]
+local function checkElements(value: any, count: number?): { any }
+	assert(type(value) == "table", `Array column expects a table, got {type(value)}`)
+	if count then
+		local length = #value
+		assert(length == count, `FixedArray expects {count} elements, got {length}`)
+	end
+	return value
+end
+
+local function writeElements(buf: buffer, offset: number, codec: Codec, value: { any }): number
+	local size = codec.Size
+	local written = 0
+	for index = 1, #value do
+		if codec.Variable then
+			written += codec.Write(buf, offset + written, value[index]) :: number
+		else
+			codec.Write(buf, offset + written, value[index])
+			written += size
+		end
+	end
+	return written
+end
+
+local function readElements(buf: buffer, offset: number, codec: Codec, count: number): ({ any }, number)
+	local value = table.create(count)
+	local size = codec.Size
+	local consumed = 0
+
+	if codec.Variable then
+		for index = 1, count do
+			local element, width = codec.Read(buf, offset + consumed)
+			value[index] = element
+			consumed += width
+		end
+	else
+		for index = 1, count do
+			value[index] = codec.Read(buf, offset + consumed)
+			consumed += size
+		end
+	end
+	return value, consumed
+end
+
+local function measureElements(codec: Codec, value: { any }): number
+	if not codec.Variable then
+		return #value * codec.Size
+	end
+
+	local measure = codec.Measure :: (any) -> number
+	local total = 0
+	for index = 1, #value do
+		total += measure(value[index])
+	end
+	return total
+end
+
+--[[
+	A column of arrays, prefixed with their element count.
+]]
+local function Array(element: number): Codec
+	local codec = codecOf(element)
+
+	return {
+		Size = 1,
+		Variable = true,
+		Write = function(buf: buffer, offset: number, value: { any }): number
+			local header = writeVarint(buf, offset, #checkElements(value))
+			return header + writeElements(buf, offset + header, codec, value)
+		end,
+		Read = function(buf: buffer, offset: number): (any, number)
+			local count, header = readVarint(buf, offset)
+			local value, consumed = readElements(buf, offset + header, codec, count)
+			return value, header + consumed
+		end,
+		Measure = function(value: { any }): number
+			return varintSize(#checkElements(value)) + measureElements(codec, value)
+		end,
+	}
+end
+
+--[[
+	A column of arrays with a fixed element count, written without a prefix.
+	Stays fixed width while its elements are.
+]]
+local function FixedArray(element: number, count: number): Codec
+	assert(isIntegral(count) and count >= 0, "FixedArray requires a non-negative count")
+	local codec = codecOf(element)
+
+	if not codec.Variable then
+		return {
+			Size = count * codec.Size,
+			Write = function(buf: buffer, offset: number, value: { any })
+				writeElements(buf, offset, codec, checkElements(value, count))
+			end,
+			Read = function(buf: buffer, offset: number): { any }
+				local value = readElements(buf, offset, codec, count)
+				return value
+			end,
+		}
+	end
+
+	return {
+		Size = count,
+		Variable = true,
+		Write = function(buf: buffer, offset: number, value: { any }): number
+			return writeElements(buf, offset, codec, checkElements(value, count))
+		end,
+		Read = function(buf: buffer, offset: number): (any, number)
+			return readElements(buf, offset, codec, count)
+		end,
+		Measure = function(value: { any }): number
+			return measureElements(codec, checkElements(value, count))
+		end,
+	}
+end
+
 return {
 	types = types,
 	reverse = reverse,
 	info = info,
+	codecOf = codecOf,
+	Array = Array,
+	FixedArray = FixedArray,
 	isIntegral = isIntegral,
 	RAW = function<T>(n: T)
 		return n
