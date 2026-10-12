@@ -26,6 +26,16 @@ local reverse = {
 	[11] = "string",
 }
 
+export type Anchors = { [any]: number }
+
+export type Codec = {
+	Size: number,
+	Variable: boolean?,
+	Write: (buf: buffer, offset: number, value: any, row: number?, anchors: Anchors?) -> number?,
+	Read: (buf: buffer, offset: number, row: number?, anchors: Anchors?) -> ...any,
+	Measure: ((value: any, row: number?, anchors: Anchors?) -> number)?,
+}
+
 --[[
 	Whether a number has no fractional part.
 ]]
@@ -89,7 +99,7 @@ end
 	Size is the fixed width, or the nominal width when Variable.
 	Variable codecs return their width from Write and Read; Measure sizes a value without writing.
 ]]
-local info = {
+local info: { [string]: Codec } = {
 	u8 = { Size = 1, Write = buffer.writeu8, Read = buffer.readu8 },
 	u16 = { Size = 2, Write = buffer.writeu16, Read = buffer.readu16 },
 	u32 = { Size = 4, Write = buffer.writeu32, Read = buffer.readu32 },

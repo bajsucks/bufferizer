@@ -127,6 +127,49 @@ do
 	check("zigzag rejects fractional", not pcall(primitives.info.zigzag.Write, buf, 0, 1.5))
 end
 
+local mixed = bufferize.Schema({ p.u16, p.varint, p.f64 }, function(v)
+	return v[1], v[2], v[3]
+end, function(id, count, score)
+	return { id, count, score }
+end)
+
+do
+	local payload = {
+		{ 1, 0, 0.5 },
+		{ 2, 127, 1.5 },
+		{ 3, 300, 2.5 },
+		{ 4, 2 ^ 40, 3.5 },
+	}
+	checkSame("variable rows round-trip", bufferize.Decode(bufferize.Encode(payload, mixed), mixed), payload)
+end
+
+local text = bufferize.Schema({ p.string, p.u8 }, function(v)
+	return v[1], v[2]
+end, function(value, tag)
+	return { value, tag }
+end)
+
+do
+	local payload = { { "", 1 }, { "hello", 2 }, { string.rep("x", 1024), 3 }, { string.char(0, 255, 0), 4 } }
+	checkSame("string rows round-trip", bufferize.Decode(bufferize.Encode(payload, text), text), payload)
+end
+
+do
+	local buf = bufferize.Encode({}, mixed)
+	checkEqual("empty variable length", buffer.len(buf), 0)
+	checkSame("empty variable round-trip", bufferize.Decode(buf, mixed), {})
+end
+
+do
+	local encoded = bufferize.Encode({ { "hello", 1 } }, text)
+	local truncated = buffer.fromstring(buffer.readstring(encoded, 0, buffer.len(encoded) - 1))
+	check("truncated variable buffer raises", not pcall(bufferize.Decode, truncated, text))
+end
+
+do
+	check("non-multiple buffer raises", not pcall(bufferize.Decode, buffer.create(3), row))
+end
+
 if failures > 0 then
 	print(`{failures} test(s) failed`)
 	process.exit(1)
