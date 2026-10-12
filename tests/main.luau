@@ -229,7 +229,7 @@ end)
 do
 	local payload = { 10, 11, 12 }
 	local buf = bufferize.Encode(payload, counters)
-	checkEqual("anchored layout", buffer.tostring(buf), string.char(20, 2, 4))
+	checkEqual("anchored layout", buffer.tostring(buf), string.char(20, 2, 2))
 	checkEqual("anchored row size", bufferize.Size(counters), nil)
 	checkEqual("anchored payload size", bufferize.Size(counters, payload), buffer.len(buf))
 	checkSame("anchored round-trip", bufferize.Decode(buf, counters), payload)
@@ -256,6 +256,16 @@ do
 	local buf = bufferize.Encode(payload, counters)
 	checkEqual("anchored identical size", buffer.len(buf), 1000)
 	checkSame("anchored identical round-trip", bufferize.Decode(buf, counters), payload)
+end
+
+do
+	local drifting = table.create(1000)
+	for index = 1, 1000 do
+		drifting[index] = 1000000 + index
+	end
+	local buf = bufferize.Encode(drifting, counters)
+	checkEqual("anchored drift size", buffer.len(buf), 1002)
+	checkSame("anchored drift round-trip", bufferize.Decode(buf, counters), drifting)
 end
 
 do

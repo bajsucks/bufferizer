@@ -271,23 +271,20 @@ end
 
 --[[
 	An integer column storing the first row's value whole and every later row
-	as a zigzag varint delta from it.
+	as a zigzag varint delta from the row before it.
 ]]
 local function Anchored(): Codec
 	local anchored: Codec
 
-	-- anchors live in the table handed to each call, so the codec itself stays stateless
+	-- the previous value lives in the table handed to each call, so the codec itself stays stateless
 	local function delta(value: number, anchors: Anchors?): number
 		assert(isIntegral(value), "Anchored requires integers")
 
-		local anchor = anchors and anchors[anchored]
-		if anchor == nil then
-			if anchors then
-				anchors[anchored] = value
-			end
-			return value
+		local previous = anchors and anchors[anchored]
+		if anchors then
+			anchors[anchored] = value
 		end
-		return value - anchor
+		return if previous == nil then value else value - previous
 	end
 
 	anchored = {
@@ -298,14 +295,10 @@ local function Anchored(): Codec
 		end,
 		Read = function(buf: buffer, offset: number, _: number?, anchors: Anchors?): (number, number)
 			local encoded, consumed = readVarint(buf, offset)
-			local value = unzigzag(encoded)
-			local anchor = anchors and anchors[anchored]
-			if anchor == nil then
-				if anchors then
-					anchors[anchored] = value
-				end
-			else
-				value += anchor
+			local previous = anchors and anchors[anchored]
+			local value = if previous == nil then unzigzag(encoded) else previous + unzigzag(encoded)
+			if anchors then
+				anchors[anchored] = value
 			end
 			return value, consumed
 		end,
