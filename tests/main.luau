@@ -276,6 +276,28 @@ do
 end
 
 do
+	local calls = 0
+	local counted = bufferize.Schema({ p.varint }, function(value)
+		calls += 1
+		return value
+	end, function(value)
+		return value
+	end)
+	bufferize.Encode({ 1, 2, 3 }, counted)
+	checkEqual("variable encode runs twice per row", calls, 6)
+
+	calls = 0
+	local through = bufferize.Schema({ p.u8 }, function(value)
+		calls += 1
+		return value
+	end, function(value)
+		return value
+	end)
+	bufferize.Encode({ 1, 2, 3 }, through)
+	checkEqual("fixed encode runs once per row", calls, 3)
+end
+
+do
 	check("non-multiple buffer raises", not pcall(bufferize.Decode, buffer.create(3), row))
 end
 
