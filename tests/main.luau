@@ -170,6 +170,19 @@ do
 	check("non-multiple buffer raises", not pcall(bufferize.Decode, buffer.create(3), row))
 end
 
+do
+	checkEqual("size per row", bufferize.Size(row), 13)
+	checkEqual("size per row with payload", bufferize.Size(row, { { 1, 1.5, 2.5 }, { 2, 3.5, 4.5 } }), 26)
+	checkEqual("size of variable schema", bufferize.Size(mixed), nil)
+end
+
+do
+	local payload = { { 1, 0, 0.5 }, { 2, 300, 1.5 }, { 3, 2 ^ 40, 2.5 } }
+	checkEqual("size of variable payload", bufferize.Size(mixed, payload), 39)
+	checkEqual("size matches encode", bufferize.Size(mixed, payload), buffer.len(bufferize.Encode(payload, mixed)))
+	checkEqual("size of empty payload", bufferize.Size(mixed, {}), 0)
+end
+
 if failures > 0 then
 	print(`{failures} test(s) failed`)
 	process.exit(1)

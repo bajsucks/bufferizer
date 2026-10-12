@@ -81,6 +81,15 @@ local function writeRow(buf: buffer, offset: number, codecs: { Codec }, row: num
 	return offset
 end
 
+local function measurePayload(codecs: { Codec }, Payload: { any }, encode): number
+	local total = 0
+	local anchors: Anchors = table.create(#codecs)
+	for row, value in Payload do
+		total += measureRow(codecs, row, anchors, encode(value))
+	end
+	return total
+end
+
 --[[
 	Encodes homogeneous payload into a buffer.
 ]]
@@ -99,13 +108,8 @@ function bufferize.Encode<T>(Payload: { T }, Schema: Schema<T>): buffer
 		return buf
 	end
 
-	local total = 0
+	local buf = buffer.create(measurePayload(codecs, Payload, encode))
 	local anchors: Anchors = table.create(#codecs)
-	for row, v: T in Payload do
-		total += measureRow(codecs, row, anchors, encode(v))
-	end
-
-	local buf = buffer.create(total)
 	local offset = 0
 	for row, v: T in Payload do
 		offset = writeRow(buf, offset, codecs, row, anchors, encode(v))
@@ -164,6 +168,24 @@ function bufferize.Decode<T>(buf: buffer, Schema: Schema<T>): { T }
 		table.clear(vals)
 	end
 	return Payload
+end
+
+--[[
+	Returns how many bytes a payload will take up once serialized.
+	If no payload is provided, will return the size of the row instead.
+	@return The size of payload/row in bytes. In row mode, if any column is variable, returns nil.
+]]
+function bufferize.Size<T>(Schema: Schema<T>, Payload: { T }?): number?
+	local codecs = resolve(Schema)
+	local size = rowSize(codecs)
+
+	if Payload == nil then
+		return size
+	end
+	if size then
+		return size * #Payload
+	end
+	return measurePayload(codecs, Payload, Schema.encode or RAW)
 end
 
 function bufferize.Schema<T>(map: { number }, encode: (value: T) -> ...any, decode: (...any) -> T): Schema<T>
