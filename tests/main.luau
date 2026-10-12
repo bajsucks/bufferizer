@@ -66,6 +66,17 @@ end
 do
 	local raw = bufferize.Schema({ p.f64 })
 	checkSame("raw schema round-trip", bufferize.Decode(bufferize.Encode({ 1.5, 2.5 }, raw), raw), { 1.5, 2.5 })
+
+	local rawAnchored = bufferize.Schema({ bufferize.Anchored() })
+	checkSame(
+		"raw anchored round-trip",
+		bufferize.Decode(bufferize.Encode({ 5, 6, 7 }, rawAnchored), rawAnchored),
+		{ 5, 6, 7 }
+	)
+	check(
+		"raw multi-column schema raises",
+		not pcall(bufferize.Encode, { { 1.5, 2.5 } }, bufferize.Schema({ p.f64, p.f64 }))
+	)
 end
 
 do

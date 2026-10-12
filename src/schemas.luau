@@ -7,8 +7,8 @@ local p = primitives.types
 
 export type Schema<T> = {
 	map: { primitives.Column },
-	encode: (value: T) -> ...any,
-	decode: (...any) -> T,
+	encode: ((value: T) -> ...any)?,
+	decode: ((...any) -> T)?,
 }
 
 -- datatypes resolve at call time so the module loads outside Roblox

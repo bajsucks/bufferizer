@@ -184,7 +184,7 @@ function bufferize.Size<T>(Schema: Schema<T>, Payload: { T }?): number?
 	return measurePayload(codecs, Payload, Schema.encode or RAW)
 end
 
-function bufferize.Schema<T>(map: { Column }, encode: (value: T) -> ...any, decode: (...any) -> T): Schema<T>
+function bufferize.Schema<T>(map: { Column }, encode: ((value: T) -> ...any)?, decode: ((...any) -> T)?): Schema<T>
 	return { map = map, encode = encode, decode = decode }
 end
 
